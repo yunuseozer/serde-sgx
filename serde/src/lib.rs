@@ -82,7 +82,7 @@
 // discussion of these features please refer to this issue:
 //
 //    https://github.com/serde-rs/serde/issues/812
-#![cfg_attr(feature = "unstable", feature(specialization, never_type))]
+#![cfg_attr(feature = "unstable", feature(specialization))]
 #![allow(unknown_lints, bare_trait_objects, deprecated)]
 #![cfg_attr(feature = "cargo-clippy", allow(renamed_and_removed_lints))]
 #![cfg_attr(feature = "cargo-clippy", deny(clippy, clippy_pedantic))]
@@ -126,8 +126,16 @@
 // Rustc lints.
 #![forbid(unsafe_code)]
 #![deny(missing_docs, unused_imports)]
+#![feature(never_type)]
 
 ////////////////////////////////////////////////////////////////////////////////
+
+#![cfg_attr(all(feature = "mesalock_sgx", not(target_env = "sgx")), no_std)]
+#![cfg_attr(all(target_env = "sgx", target_vendor = "mesalock"), feature(rustc_private))]
+
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+#[macro_use]
+extern crate sgx_tstd as std;
 
 #[cfg(feature = "alloc")]
 extern crate alloc;
@@ -208,8 +216,10 @@ mod lib {
     pub use std::num::Wrapping;
     #[cfg(feature = "std")]
     pub use std::path::{Path, PathBuf};
-    #[cfg(feature = "std")]
+    #[cfg(all(feature = "std", not(feature = "mesalock_sgx")))]
     pub use std::sync::{Mutex, RwLock};
+    #[cfg(all(feature = "std", feature = "mesalock_sgx"))]
+    pub use std::sync::{SgxMutex as Mutex, SgxRwLock as RwLock};
     #[cfg(feature = "std")]
     pub use std::time::{SystemTime, UNIX_EPOCH};
 
