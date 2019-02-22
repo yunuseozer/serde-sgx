@@ -1,3 +1,5 @@
+# This is a ported version for Serde works with rust-sgx-sdk
+
 # Serde &emsp; [![Build Status]][travis] [![Latest Version]][crates.io] [![serde: rustc 1.13+]][Rust 1.13] [![serde_derive: rustc 1.31+]][Rust 1.31]
 
 [Build Status]: https://api.travis-ci.org/serde-rs/serde.svg?branch=master
