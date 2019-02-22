@@ -11,8 +11,13 @@ keywords = ["serde", "serialization"]
 readme = "crates-io.md"
 include = ["Cargo.toml", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APACHE", "LICENSE-MIT"]
 
+[features]
+default = ["mesalock_sgx"]
+mesalock_sgx = ["sgx_tstd"]
+
 [dependencies]
-serde = { version = "1.0.60", path = "../serde" }
+serde = { version = "1.0", path = "../serde" }
+sgx_tstd = { rev = "v1.0.9", git = "https://github.com/baidu/rust-sgx-sdk.git", optional = true }
 
 [dev-dependencies]
 serde = { version = "1.0", path = "../serde" }

@@ -488,8 +488,24 @@ nonzero_integers! {
     NonZeroUsize,
 }
 
+macro_rules! nonzero_signed_integers {
+    ( $( $T: ident, )+ ) => {
+        $(
+            #[cfg(num_signed_nonzero)]
+            impl Serialize for core::num::$T {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    self.get().serialize(serializer)
+                }
+            }
+        )+
+    }
+}
+
 #[cfg(num_nonzero_signed)]
-nonzero_integers! {
+nonzero_signed_integers! {
     NonZeroI8,
     NonZeroI16,
     NonZeroI32,
@@ -505,7 +521,7 @@ serde_if_integer128! {
     }
 
     #[cfg(num_nonzero_signed)]
-    nonzero_integers! {
+    nonzero_signed_integers! {
         NonZeroI128,
     }
 }
@@ -536,6 +552,9 @@ where
         }
     }
 }
+
+#[cfg(all(feature = "std", any(feature = "mesalock_sgx", all(target_env = "sgx", target_vendor = "mesalock"))))]
+use std::sync::{SgxMutex as Mutex, SgxRwLock as RwLock};
 
 #[cfg(feature = "std")]
 impl<T> Serialize for Mutex<T>

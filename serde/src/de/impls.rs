@@ -1,3 +1,9 @@
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+use std::prelude::v1::*;
+#[cfg(all(feature = "std",
+          any(feature = "mesalock_sgx",
+              all(target_env = "sgx", target_vendor = "mesalock"))))]
+use std::sync::{SgxMutex as Mutex, SgxRwLock as RwLock};
 use lib::*;
 
 use de::{
@@ -2432,8 +2438,28 @@ nonzero_integers! {
     NonZeroUsize,
 }
 
+macro_rules! nonzero_signed_integers {
+    ( $( $T: ident, )+ ) => {
+        $(
+            #[cfg(num_nonzero_signed)]
+            impl<'de> Deserialize<'de> for core::num::$T {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: Deserializer<'de>,
+                {
+                    let value = try!(Deserialize::deserialize(deserializer));
+                    match <core::num::$T>::new(value) {
+                        Some(nonzero) => Ok(nonzero),
+                        None => Err(Error::custom("expected a non-zero value")),
+                    }
+                }
+            }
+        )+
+    };
+}
+
 #[cfg(num_nonzero_signed)]
-nonzero_integers! {
+nonzero_signed_integers! {
     NonZeroI8,
     NonZeroI16,
     NonZeroI32,
@@ -2449,7 +2475,7 @@ serde_if_integer128! {
     }
 
     #[cfg(num_nonzero_signed)]
-    nonzero_integers! {
+    nonzero_signed_integers! {
         NonZeroI128,
     }
 }
