@@ -1505,7 +1505,7 @@ pub trait Visitor<'de>: Sized {
     /// The default implementation forwards to `visit_str` and then drops the
     /// `String`.
     #[inline]
-    #[cfg(any(feature = "std", feature = "alloc"))]
+    #[cfg(any(feature = "std", feature = "mesalock_sgx", feature = "alloc"))]
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
         E: Error,
@@ -1564,7 +1564,7 @@ pub trait Visitor<'de>: Sized {
     ///
     /// The default implementation forwards to `visit_bytes` and then drops the
     /// `Vec<u8>`.
-    #[cfg(any(feature = "std", feature = "alloc"))]
+    #[cfg(any(feature = "std", feature = "mesalock_sgx", feature = "alloc"))]
     fn visit_byte_buf<E>(self, v: Vec<u8>) -> Result<Self::Value, E>
     where
         E: Error,
@@ -1808,9 +1808,9 @@ pub trait MapAccess<'de> {
         K: DeserializeSeed<'de>,
         V: DeserializeSeed<'de>,
     {
-        match try!(self.next_key_seed(kseed)) {
+        match self.next_key_seed(kseed)? {
             Some(key) => {
-                let value = try!(self.next_value_seed(vseed));
+                let value = self.next_value_seed(vseed)?;
                 Ok(Some((key, value)))
             }
             None => Ok(None),
@@ -2262,12 +2262,12 @@ impl Display for OneOf {
             1 => write!(formatter, "`{}`", self.names[0]),
             2 => write!(formatter, "`{}` or `{}`", self.names[0], self.names[1]),
             _ => {
-                try!(write!(formatter, "one of "));
+                write!(formatter, "one of ")?;
                 for (i, alt) in self.names.iter().enumerate() {
                     if i > 0 {
-                        try!(write!(formatter, ", "));
+                        write!(formatter, ", ")?;
                     }
-                    try!(write!(formatter, "`{}`", alt));
+                    write!(formatter, "`{}`", alt)?;
                 }
                 Ok(())
             }
