@@ -15,7 +15,8 @@ include = ["build.rs", "src/**/*.rs", "crates-io.md", "README.md", "LICENSE-APAC
 build = "build.rs"
 
 [dependencies]
-serde_derive = { version = "=1.0.139", optional = true, path = "../serde_derive" }
+serde_derive = { version = "=1.0.118", optional = true, path = "../serde_derive" }
+sgx_tstd = { rev = "v1.1.3", git = "https://github.com/apache/teaclave-sgx-sdk.git", optional = true }
 
 [dev-dependencies]
 serde_derive = { version = "1.0", path = "../serde_derive" }
@@ -30,7 +31,7 @@ targets = ["x86_64-unknown-linux-gnu"]
 ### FEATURES #################################################################
 
 [features]
-default = ["std"]
+default = ["std", "mesalock_sgx"]
 
 # Provide derive(Serialize, Deserialize) macros.
 derive = ["serde_derive"]
@@ -54,3 +55,5 @@ alloc = []
 # does not preserve identity and may result in multiple copies of the same data.
 # Be sure that this is what you want before enabling this feature.
 rc = []
+
+mesalock_sgx = ["sgx_tstd", "std"]

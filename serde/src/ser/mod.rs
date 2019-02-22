@@ -1279,18 +1279,8 @@ pub trait Serializer: Sized {
     {
         let iter = iter.into_iter();
         let mut serializer = try!(self.serialize_seq(iterator_len_hint(&iter)));
-
-        #[cfg(not(no_iterator_try_fold))]
-        {
-            let mut iter = iter;
-            try!(iter.try_for_each(|item| serializer.serialize_element(&item)));
-        }
-
-        #[cfg(no_iterator_try_fold)]
-        {
-            for item in iter {
-                try!(serializer.serialize_element(&item));
-            }
+        for item in iter {
+            serializer.serialize_element(&item)?;
         }
 
         serializer.end()
@@ -1330,18 +1320,8 @@ pub trait Serializer: Sized {
     {
         let iter = iter.into_iter();
         let mut serializer = try!(self.serialize_map(iterator_len_hint(&iter)));
-
-        #[cfg(not(no_iterator_try_fold))]
-        {
-            let mut iter = iter;
-            try!(iter.try_for_each(|(key, value)| serializer.serialize_entry(&key, &value)));
-        }
-
-        #[cfg(no_iterator_try_fold)]
-        {
-            for (key, value) in iter {
-                try!(serializer.serialize_entry(&key, &value));
-            }
+        for (key, value) in iter {
+            serializer.serialize_entry(&key, &value)?;
         }
 
         serializer.end()
@@ -1841,7 +1821,7 @@ pub trait SerializeMap {
         K: Serialize,
         V: Serialize,
     {
-        try!(self.serialize_key(key));
+        self.serialize_key(key)?;
         self.serialize_value(value)
     }
 

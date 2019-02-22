@@ -188,8 +188,8 @@ where
     }
 
     fn serialize_unit_struct(self, _: &'static str) -> Result<Self::Ok, Self::Error> {
-        let mut map = try!(self.delegate.serialize_map(Some(1)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
+        let mut map = self.delegate.serialize_map(Some(1))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
         map.end()
     }
 
@@ -199,9 +199,9 @@ where
         _: u32,
         inner_variant: &'static str,
     ) -> Result<Self::Ok, Self::Error> {
-        let mut map = try!(self.delegate.serialize_map(Some(2)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
-        try!(map.serialize_entry(inner_variant, &()));
+        let mut map = self.delegate.serialize_map(Some(2))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
+        map.serialize_entry(inner_variant, &())?;
         map.end()
     }
 
@@ -226,9 +226,9 @@ where
     where
         T: Serialize,
     {
-        let mut map = try!(self.delegate.serialize_map(Some(2)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
-        try!(map.serialize_entry(inner_variant, inner_value));
+        let mut map = self.delegate.serialize_map(Some(2))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
+        map.serialize_entry(inner_variant, inner_value)?;
         map.end()
     }
 
@@ -269,9 +269,9 @@ where
         inner_variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeTupleVariant, Self::Error> {
-        let mut map = try!(self.delegate.serialize_map(Some(2)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
-        try!(map.serialize_key(inner_variant));
+        let mut map = self.delegate.serialize_map(Some(2))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
+        map.serialize_key(inner_variant)?;
         Ok(SerializeTupleVariantAsMapValue::new(
             map,
             inner_variant,
@@ -280,8 +280,8 @@ where
     }
 
     fn serialize_map(self, len: Option<usize>) -> Result<Self::SerializeMap, Self::Error> {
-        let mut map = try!(self.delegate.serialize_map(len.map(|len| len + 1)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
+        let mut map = self.delegate.serialize_map(len.map(|len| len + 1))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
         Ok(map)
     }
 
@@ -290,8 +290,8 @@ where
         name: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStruct, Self::Error> {
-        let mut state = try!(self.delegate.serialize_struct(name, len + 1));
-        try!(state.serialize_field(self.tag, self.variant_name));
+        let mut state = self.delegate.serialize_struct(name, len + 1)?;
+        state.serialize_field(self.tag, self.variant_name)?;
         Ok(state)
     }
 
@@ -316,9 +316,9 @@ where
         inner_variant: &'static str,
         len: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        let mut map = try!(self.delegate.serialize_map(Some(2)));
-        try!(map.serialize_entry(self.tag, self.variant_name));
-        try!(map.serialize_key(inner_variant));
+        let mut map = self.delegate.serialize_map(Some(2))?;
+        map.serialize_entry(self.tag, self.variant_name)?;
+        map.serialize_key(inner_variant)?;
         Ok(SerializeStructVariantAsMapValue::new(
             map,
             inner_variant,
@@ -368,15 +368,15 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<M::Error>::new()));
+            let value = value.serialize(ContentSerializer::<M::Error>::new())?;
             self.fields.push(value);
             Ok(())
         }
 
         fn end(mut self) -> Result<M::Ok, M::Error> {
-            try!(self
+            self
                 .map
-                .serialize_value(&Content::TupleStruct(self.name, self.fields)));
+                .serialize_value(&Content::TupleStruct(self.name, self.fields))?;
             self.map.end()
         }
     }
@@ -412,15 +412,15 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<M::Error>::new()));
+            let value = value.serialize(ContentSerializer::<M::Error>::new())?;
             self.fields.push((key, value));
             Ok(())
         }
 
         fn end(mut self) -> Result<M::Ok, M::Error> {
-            try!(self
+            self
                 .map
-                .serialize_value(&Content::Struct(self.name, self.fields)));
+                .serialize_value(&Content::Struct(self.name, self.fields))?;
             self.map.end()
         }
     }
@@ -500,49 +500,49 @@ mod content {
                 Content::Seq(ref elements) => elements.serialize(serializer),
                 Content::Tuple(ref elements) => {
                     use ser::SerializeTuple;
-                    let mut tuple = try!(serializer.serialize_tuple(elements.len()));
+                    let mut tuple = serializer.serialize_tuple(elements.len())?;
                     for e in elements {
-                        try!(tuple.serialize_element(e));
+                        tuple.serialize_element(e)?;
                     }
                     tuple.end()
                 }
                 Content::TupleStruct(n, ref fields) => {
                     use ser::SerializeTupleStruct;
-                    let mut ts = try!(serializer.serialize_tuple_struct(n, fields.len()));
+                    let mut ts = serializer.serialize_tuple_struct(n, fields.len())?;
                     for f in fields {
-                        try!(ts.serialize_field(f));
+                        ts.serialize_field(f)?;
                     }
                     ts.end()
                 }
                 Content::TupleVariant(n, i, v, ref fields) => {
                     use ser::SerializeTupleVariant;
-                    let mut tv = try!(serializer.serialize_tuple_variant(n, i, v, fields.len()));
+                    let mut tv = serializer.serialize_tuple_variant(n, i, v, fields.len())?;
                     for f in fields {
-                        try!(tv.serialize_field(f));
+                        tv.serialize_field(f)?;
                     }
                     tv.end()
                 }
                 Content::Map(ref entries) => {
                     use ser::SerializeMap;
-                    let mut map = try!(serializer.serialize_map(Some(entries.len())));
+                    let mut map = serializer.serialize_map(Some(entries.len()))?;
                     for &(ref k, ref v) in entries {
-                        try!(map.serialize_entry(k, v));
+                        map.serialize_entry(k, v)?;
                     }
                     map.end()
                 }
                 Content::Struct(n, ref fields) => {
                     use ser::SerializeStruct;
-                    let mut s = try!(serializer.serialize_struct(n, fields.len()));
+                    let mut s = serializer.serialize_struct(n, fields.len())?;
                     for &(k, ref v) in fields {
-                        try!(s.serialize_field(k, v));
+                        s.serialize_field(k, v)?;
                     }
                     s.end()
                 }
                 Content::StructVariant(n, i, v, ref fields) => {
                     use ser::SerializeStructVariant;
-                    let mut sv = try!(serializer.serialize_struct_variant(n, i, v, fields.len()));
+                    let mut sv = serializer.serialize_struct_variant(n, i, v, fields.len())?;
                     for &(k, ref v) in fields {
-                        try!(sv.serialize_field(k, v));
+                        sv.serialize_field(k, v)?;
                     }
                     sv.end()
                 }
@@ -639,7 +639,7 @@ mod content {
         where
             T: Serialize,
         {
-            Ok(Content::Some(Box::new(try!(value.serialize(self)))))
+            Ok(Content::Some(Box::new(value.serialize(self)?)))
         }
 
         fn serialize_unit(self) -> Result<Content, E> {
@@ -669,7 +669,7 @@ mod content {
         {
             Ok(Content::NewtypeStruct(
                 name,
-                Box::new(try!(value.serialize(self))),
+                Box::new(value.serialize(self)?),
             ))
         }
 
@@ -687,7 +687,7 @@ mod content {
                 name,
                 variant_index,
                 variant,
-                Box::new(try!(value.serialize(self))),
+                Box::new(value.serialize(self)?),
             ))
         }
 
@@ -786,7 +786,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.elements.push(value);
             Ok(())
         }
@@ -812,7 +812,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.elements.push(value);
             Ok(())
         }
@@ -839,7 +839,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.fields.push(value);
             Ok(())
         }
@@ -868,7 +868,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.fields.push(value);
             Ok(())
         }
@@ -900,7 +900,7 @@ mod content {
         where
             T: Serialize,
         {
-            let key = try!(key.serialize(ContentSerializer::<E>::new()));
+            let key = key.serialize(ContentSerializer::<E>::new())?;
             self.key = Some(key);
             Ok(())
         }
@@ -913,7 +913,7 @@ mod content {
                 .key
                 .take()
                 .expect("serialize_value called before serialize_key");
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.entries.push((key, value));
             Ok(())
         }
@@ -927,8 +927,8 @@ mod content {
             K: Serialize,
             V: Serialize,
         {
-            let key = try!(key.serialize(ContentSerializer::<E>::new()));
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let key = key.serialize(ContentSerializer::<E>::new())?;
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.entries.push((key, value));
             Ok(())
         }
@@ -951,7 +951,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.fields.push((key, value));
             Ok(())
         }
@@ -980,7 +980,7 @@ mod content {
         where
             T: Serialize,
         {
-            let value = try!(value.serialize(ContentSerializer::<E>::new()));
+            let value = value.serialize(ContentSerializer::<E>::new())?;
             self.fields.push((key, value));
             Ok(())
         }
@@ -1133,7 +1133,7 @@ where
     where
         T: Serialize,
     {
-        try!(self.0.serialize_key(variant));
+        self.0.serialize_key(variant)?;
         self.0.serialize_value(value)
     }
 
@@ -1182,7 +1182,7 @@ where
         inner_variant: &'static str,
         _: usize,
     ) -> Result<Self::SerializeStructVariant, Self::Error> {
-        try!(self.0.serialize_key(inner_variant));
+        self.0.serialize_key(inner_variant)?;
         Ok(FlatMapSerializeStructVariantAsMapValue::new(
             self.0,
             inner_variant,
@@ -1296,15 +1296,15 @@ where
     where
         T: Serialize,
     {
-        let value = try!(value.serialize(ContentSerializer::<M::Error>::new()));
+        let value = value.serialize(ContentSerializer::<M::Error>::new())?;
         self.fields.push((key, value));
         Ok(())
     }
 
     fn end(self) -> Result<(), Self::Error> {
-        try!(self
+        self
             .map
-            .serialize_value(&Content::Struct(self.name, self.fields)));
+            .serialize_value(&Content::Struct(self.name, self.fields))?;
         Ok(())
     }
 }

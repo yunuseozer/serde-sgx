@@ -1,3 +1,9 @@
+#[cfg(all(feature = "mesalock_sgx", not(target_env = "sgx")))]
+use std::prelude::v1::*;
+#[cfg(all(feature = "std",
+          any(feature = "mesalock_sgx",
+              all(target_env = "sgx", target_vendor = "mesalock"))))]
+use std::sync::{SgxMutex as Mutex, SgxRwLock as RwLock};
 use lib::*;
 
 use de::{
@@ -684,7 +690,7 @@ impl<'de> Visitor<'de> for CStringVisitor {
         let len = size_hint::cautious(seq.size_hint());
         let mut values = Vec::with_capacity(len);
 
-        while let Some(value) = try!(seq.next_element()) {
+        while let Some(value) = seq.next_element()? {
             values.push(value);
         }
 
@@ -1034,7 +1040,7 @@ where
             {
                 let mut values = Vec::with_capacity(size_hint::cautious(seq.size_hint()));
 
-                while let Some(value) = try!(seq.next_element()) {
+                while let Some(value) = seq.next_element()? {
                     values.push(value);
                 }
 
@@ -1076,7 +1082,7 @@ where
                 for i in 0..self.0.len() {
                     let next = {
                         let next_place = InPlaceSeed(&mut self.0[i]);
-                        try!(seq.next_element_seed(next_place))
+                        seq.next_element_seed(next_place)?
                     };
                     if next.is_none() {
                         self.0.truncate(i);
@@ -1084,7 +1090,7 @@ where
                     }
                 }
 
-                while let Some(value) = try!(seq.next_element()) {
+                while let Some(value) = seq.next_element()? {
                     self.0.push(value);
                 }
 
@@ -1747,7 +1753,7 @@ impl<'de> Visitor<'de> for OsStringVisitor {
     {
         use std::os::unix::ffi::OsStringExt;
 
-        match try!(data.variant()) {
+        match data.variant()? {
             (OsStringKind::Unix, v) => v.newtype_variant().map(OsString::from_vec),
             (OsStringKind::Windows, _) => Err(Error::custom(
                 "cannot deserialize Windows OS string on Unix",
@@ -1762,7 +1768,7 @@ impl<'de> Visitor<'de> for OsStringVisitor {
     {
         use std::os::windows::ffi::OsStringExt;
 
-        match try!(data.variant()) {
+        match data.variant()? {
             (OsStringKind::Windows, v) => v
                 .newtype_variant::<Vec<u16>>()
                 .map(|vec| OsString::from_wide(&vec)),
@@ -1848,7 +1854,7 @@ where
     where
         D: Deserializer<'de>,
     {
-        try!(Option::<T>::deserialize(deserializer));
+        Option::<T>::deserialize(deserializer)?;
         Ok(RcWeak::new())
     }
 }
@@ -1866,7 +1872,7 @@ where
     where
         D: Deserializer<'de>,
     {
-        try!(Option::<T>::deserialize(deserializer));
+        Option::<T>::deserialize(deserializer)?;
         Ok(ArcWeak::new())
     }
 }
@@ -2045,13 +2051,13 @@ impl<'de> Deserialize<'de> for Duration {
             where
                 A: SeqAccess<'de>,
             {
-                let secs: u64 = match try!(seq.next_element()) {
+                let secs: u64 = match seq.next_element()? {
                     Some(value) => value,
                     None => {
                         return Err(Error::invalid_length(0, &self));
                     }
                 };
-                let nanos: u32 = match try!(seq.next_element()) {
+                let nanos: u32 = match seq.next_element()? {
                     Some(value) => value,
                     None => {
                         return Err(Error::invalid_length(1, &self));
@@ -2067,19 +2073,19 @@ impl<'de> Deserialize<'de> for Duration {
             {
                 let mut secs: Option<u64> = None;
                 let mut nanos: Option<u32> = None;
-                while let Some(key) = try!(map.next_key()) {
+                while let Some(key) = map.next_key()? {
                     match key {
                         Field::Secs => {
                             if secs.is_some() {
                                 return Err(<A::Error as Error>::duplicate_field("secs"));
                             }
-                            secs = Some(try!(map.next_value()));
+                            secs = Some(map.next_value()?);
                         }
                         Field::Nanos => {
                             if nanos.is_some() {
                                 return Err(<A::Error as Error>::duplicate_field("nanos"));
                             }
-                            nanos = Some(try!(map.next_value()));
+                            nanos = Some(map.next_value()?);
                         }
                     }
                 }
@@ -2183,13 +2189,13 @@ impl<'de> Deserialize<'de> for SystemTime {
             where
                 A: SeqAccess<'de>,
             {
-                let secs: u64 = match try!(seq.next_element()) {
+                let secs: u64 = match seq.next_element()? {
                     Some(value) => value,
                     None => {
                         return Err(Error::invalid_length(0, &self));
                     }
                 };
-                let nanos: u32 = match try!(seq.next_element()) {
+                let nanos: u32 = match seq.next_element()? {
                     Some(value) => value,
                     None => {
                         return Err(Error::invalid_length(1, &self));
@@ -2205,7 +2211,7 @@ impl<'de> Deserialize<'de> for SystemTime {
             {
                 let mut secs: Option<u64> = None;
                 let mut nanos: Option<u32> = None;
-                while let Some(key) = try!(map.next_key()) {
+                while let Some(key) = map.next_key()? {
                     match key {
                         Field::Secs => {
                             if secs.is_some() {
@@ -2213,7 +2219,7 @@ impl<'de> Deserialize<'de> for SystemTime {
                                     "secs_since_epoch",
                                 ));
                             }
-                            secs = Some(try!(map.next_value()));
+                            secs = Some(map.next_value()?);
                         }
                         Field::Nanos => {
                             if nanos.is_some() {
@@ -2221,7 +2227,7 @@ impl<'de> Deserialize<'de> for SystemTime {
                                     "nanos_since_epoch",
                                 ));
                             }
-                            nanos = Some(try!(map.next_value()));
+                            nanos = Some(map.next_value()?);
                         }
                     }
                 }
@@ -2239,14 +2245,8 @@ impl<'de> Deserialize<'de> for SystemTime {
         }
 
         const FIELDS: &'static [&'static str] = &["secs_since_epoch", "nanos_since_epoch"];
-        let duration = try!(deserializer.deserialize_struct("SystemTime", FIELDS, DurationVisitor));
-        #[cfg(not(no_systemtime_checked_add))]
-        let ret = UNIX_EPOCH
-            .checked_add(duration)
-            .ok_or_else(|| D::Error::custom("overflow deserializing SystemTime"));
-        #[cfg(no_systemtime_checked_add)]
-        let ret = Ok(UNIX_EPOCH + duration);
-        ret
+        let duration = deserializer.deserialize_struct("SystemTime", FIELDS, DurationVisitor)?;
+        Ok(UNIX_EPOCH + duration)
     }
 }
 
@@ -2380,13 +2380,13 @@ mod range {
         where
             A: SeqAccess<'de>,
         {
-            let start: Idx = match try!(seq.next_element()) {
+            let start: Idx = match seq.next_element()? {
                 Some(value) => value,
                 None => {
                     return Err(Error::invalid_length(0, &self));
                 }
             };
-            let end: Idx = match try!(seq.next_element()) {
+            let end: Idx = match seq.next_element()? {
                 Some(value) => value,
                 None => {
                     return Err(Error::invalid_length(1, &self));
@@ -2401,19 +2401,19 @@ mod range {
         {
             let mut start: Option<Idx> = None;
             let mut end: Option<Idx> = None;
-            while let Some(key) = try!(map.next_key()) {
+            while let Some(key) = map.next_key()? {
                 match key {
                     Field::Start => {
                         if start.is_some() {
                             return Err(<A::Error as Error>::duplicate_field("start"));
                         }
-                        start = Some(try!(map.next_value()));
+                        start = Some(map.next_value()?);
                     }
                     Field::End => {
                         if end.is_some() {
                             return Err(<A::Error as Error>::duplicate_field("end"));
                         }
-                        end = Some(try!(map.next_value()));
+                        end = Some(map.next_value()?);
                     }
                 }
             }
@@ -2524,7 +2524,7 @@ where
             where
                 A: EnumAccess<'de>,
             {
-                match try!(data.variant()) {
+                match data.variant()? {
                     (Field::Unbounded, v) => v.unit_variant().map(|()| Bound::Unbounded),
                     (Field::Included, v) => v.newtype_variant().map(Bound::Included),
                     (Field::Excluded, v) => v.newtype_variant().map(Bound::Excluded),
@@ -2535,6 +2535,78 @@ where
         const VARIANTS: &'static [&'static str] = &["Unbounded", "Included", "Excluded"];
 
         deserializer.deserialize_enum("Bound", VARIANTS, BoundVisitor(PhantomData))
+    }
+}
+
+////////////////////////////////////////////////////////////////////////////////
+
+macro_rules! nonzero_integers {
+    ( $( $T: ident, )+ ) => {
+        $(
+            #[cfg(num_nonzero)]
+            impl<'de> Deserialize<'de> for num::$T {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: Deserializer<'de>,
+                {
+                    let value = try!(Deserialize::deserialize(deserializer));
+                    match <num::$T>::new(value) {
+                        Some(nonzero) => Ok(nonzero),
+                        None => Err(Error::custom("expected a non-zero value")),
+                    }
+                }
+            }
+        )+
+    };
+}
+
+nonzero_integers! {
+    NonZeroU8,
+    NonZeroU16,
+    NonZeroU32,
+    NonZeroU64,
+    NonZeroUsize,
+}
+
+macro_rules! nonzero_signed_integers {
+    ( $( $T: ident, )+ ) => {
+        $(
+            #[cfg(num_nonzero_signed)]
+            impl<'de> Deserialize<'de> for core::num::$T {
+                fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+                where
+                    D: Deserializer<'de>,
+                {
+                    let value = try!(Deserialize::deserialize(deserializer));
+                    match <core::num::$T>::new(value) {
+                        Some(nonzero) => Ok(nonzero),
+                        None => Err(Error::custom("expected a non-zero value")),
+                    }
+                }
+            }
+        )+
+    };
+}
+
+#[cfg(num_nonzero_signed)]
+nonzero_signed_integers! {
+    NonZeroI8,
+    NonZeroI16,
+    NonZeroI32,
+    NonZeroI64,
+    NonZeroIsize,
+}
+
+// Currently 128-bit integers do not work on Emscripten targets so we need an
+// additional `#[cfg]`
+serde_if_integer128! {
+    nonzero_integers! {
+        NonZeroU128,
+    }
+
+    #[cfg(num_nonzero_signed)]
+    nonzero_signed_integers! {
+        NonZeroI128,
     }
 }
 
@@ -2633,7 +2705,7 @@ where
             where
                 A: EnumAccess<'de>,
             {
-                match try!(data.variant()) {
+                match data.variant()? {
                     (Field::Ok, v) => v.newtype_variant().map(Ok),
                     (Field::Err, v) => v.newtype_variant().map(Err),
                 }

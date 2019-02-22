@@ -26,7 +26,7 @@ quote = "1.0"
 syn = "1.0.90"
 
 [dev-dependencies]
-serde = { version = "1.0", path = "../serde" }
+serde = { version = "1.0", path = "../serde", default-features = false, features = ["std"] }
 
 [package.metadata.docs.rs]
 targets = ["x86_64-unknown-linux-gnu"]
