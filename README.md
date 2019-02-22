@@ -1,3 +1,4 @@
+# This is a ported version for Serde works with rust-sgx-sdk
 # Serde &emsp; [![Build Status]][actions] [![Latest Version]][crates.io] [![serde: rustc 1.13+]][Rust 1.13] [![serde_derive: rustc 1.31+]][Rust 1.31]
 
 [Build Status]: https://img.shields.io/github/workflow/status/serde-rs/serde/CI/master

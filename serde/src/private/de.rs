@@ -494,7 +494,7 @@ mod content {
             V: SeqAccess<'de>,
         {
             let mut vec = Vec::with_capacity(size_hint::cautious(visitor.size_hint()));
-            while let Some(e) = try!(visitor.next_element()) {
+            while let Some(e) = visitor.next_element()? {
                 vec.push(e);
             }
             Ok(Content::Seq(vec))
@@ -505,7 +505,7 @@ mod content {
             V: MapAccess<'de>,
         {
             let mut vec = Vec::with_capacity(size_hint::cautious(visitor.size_hint()));
-            while let Some(kv) = try!(visitor.next_entry()) {
+            while let Some(kv) = visitor.next_entry()? {
                 vec.push(kv);
             }
             Ok(Content::Map(vec))
@@ -868,7 +868,7 @@ mod content {
         where
             S: SeqAccess<'de>,
         {
-            let tag = match try!(seq.next_element()) {
+            let tag = match seq.next_element()? {
                 Some(tag) => tag,
                 None => {
                     return Err(de::Error::missing_field(self.tag_name));
@@ -877,7 +877,7 @@ mod content {
             let rest = de::value::SeqAccessDeserializer::new(seq);
             Ok(TaggedContent {
                 tag: tag,
-                content: try!(Content::deserialize(rest)),
+                content: Content::deserialize(rest)?,
             })
         }
 
@@ -887,16 +887,16 @@ mod content {
         {
             let mut tag = None;
             let mut vec = Vec::with_capacity(size_hint::cautious(map.size_hint()));
-            while let Some(k) = try!(map.next_key_seed(TagOrContentVisitor::new(self.tag_name))) {
+            while let Some(k) = map.next_key_seed(TagOrContentVisitor::new(self.tag_name))? {
                 match k {
                     TagOrContent::Tag => {
                         if tag.is_some() {
                             return Err(de::Error::duplicate_field(self.tag_name));
                         }
-                        tag = Some(try!(map.next_value()));
+                        tag = Some(map.next_value()?);
                     }
                     TagOrContent::Content(k) => {
-                        let v = try!(map.next_value());
+                        let v = map.next_value()?;
                         vec.push((k, v));
                     }
                 }
@@ -1049,8 +1049,8 @@ mod content {
     {
         let seq = content.into_iter().map(ContentDeserializer::new);
         let mut seq_visitor = de::value::SeqDeserializer::new(seq);
-        let value = try!(visitor.visit_seq(&mut seq_visitor));
-        try!(seq_visitor.end());
+        let value = visitor.visit_seq(&mut seq_visitor)?;
+        seq_visitor.end()?;
         Ok(value)
     }
 
@@ -1066,8 +1066,8 @@ mod content {
             .into_iter()
             .map(|(k, v)| (ContentDeserializer::new(k), ContentDeserializer::new(v)));
         let mut map_visitor = de::value::MapDeserializer::new(map);
-        let value = try!(visitor.visit_map(&mut map_visitor));
-        try!(map_visitor.end());
+        let value = visitor.visit_map(&mut map_visitor)?;
+        map_visitor.end()?;
         Ok(value)
     }
 
@@ -1605,7 +1605,7 @@ mod content {
             if len == 0 {
                 visitor.visit_unit()
             } else {
-                let ret = try!(visitor.visit_seq(&mut self));
+                let ret = visitor.visit_seq(&mut self)?;
                 let remaining = self.iter.len();
                 if remaining == 0 {
                     Ok(ret)
@@ -1763,8 +1763,8 @@ mod content {
     {
         let seq = content.iter().map(ContentRefDeserializer::new);
         let mut seq_visitor = de::value::SeqDeserializer::new(seq);
-        let value = try!(visitor.visit_seq(&mut seq_visitor));
-        try!(seq_visitor.end());
+        let value = visitor.visit_seq(&mut seq_visitor)?;
+        seq_visitor.end()?;
         Ok(value)
     }
 
@@ -1783,8 +1783,8 @@ mod content {
             )
         });
         let mut map_visitor = de::value::MapDeserializer::new(map);
-        let value = try!(visitor.visit_map(&mut map_visitor));
-        try!(map_visitor.end());
+        let value = visitor.visit_map(&mut map_visitor)?;
+        map_visitor.end()?;
         Ok(value)
     }
 
@@ -2295,7 +2295,7 @@ mod content {
             if len == 0 {
                 visitor.visit_unit()
             } else {
-                let ret = try!(visitor.visit_seq(&mut self));
+                let ret = visitor.visit_seq(&mut self)?;
                 let remaining = self.iter.len();
                 if remaining == 0 {
                     Ok(ret)

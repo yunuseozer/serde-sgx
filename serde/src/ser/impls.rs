@@ -133,7 +133,7 @@ impl<T> Serialize for [T; 0] {
     where
         S: Serializer,
     {
-        try!(serializer.serialize_tuple(0)).end()
+        serializer.serialize_tuple(0)?.end()
     }
 }
 
@@ -230,9 +230,9 @@ where
         S: Serializer,
     {
         use super::SerializeStruct;
-        let mut state = try!(serializer.serialize_struct("Range", 2));
-        try!(state.serialize_field("start", &self.start));
-        try!(state.serialize_field("end", &self.end));
+        let mut state = serializer.serialize_struct("Range", 2)?;
+        state.serialize_field("start", &self.start)?;
+        state.serialize_field("end", &self.end)?;
         state.end()
     }
 }
@@ -249,9 +249,9 @@ where
         S: Serializer,
     {
         use super::SerializeStruct;
-        let mut state = try!(serializer.serialize_struct("RangeInclusive", 2));
-        try!(state.serialize_field("start", &self.start()));
-        try!(state.serialize_field("end", &self.end()));
+        let mut state = serializer.serialize_struct("RangeInclusive", 2)?;
+        state.serialize_field("start", &self.start())?;
+        state.serialize_field("end", &self.end())?;
         state.end()
     }
 }
@@ -488,8 +488,24 @@ nonzero_integers! {
     NonZeroUsize,
 }
 
+macro_rules! nonzero_signed_integers {
+    ( $( $T: ident, )+ ) => {
+        $(
+            #[cfg(num_signed_nonzero)]
+            impl Serialize for core::num::$T {
+                fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+                where
+                    S: Serializer,
+                {
+                    self.get().serialize(serializer)
+                }
+            }
+        )+
+    }
+}
+
 #[cfg(num_nonzero_signed)]
-nonzero_integers! {
+nonzero_signed_integers! {
     NonZeroI8,
     NonZeroI16,
     NonZeroI32,
@@ -505,7 +521,7 @@ serde_if_integer128! {
     }
 
     #[cfg(num_nonzero_signed)]
-    nonzero_integers! {
+    nonzero_signed_integers! {
         NonZeroI128,
     }
 }
@@ -536,6 +552,9 @@ where
         }
     }
 }
+
+#[cfg(all(feature = "std", any(feature = "mesalock_sgx", all(target_env = "sgx", target_vendor = "mesalock"))))]
+use std::sync::{SgxMutex as Mutex, SgxRwLock as RwLock};
 
 #[cfg(feature = "std")]
 impl<T> Serialize for Mutex<T>
@@ -598,9 +617,9 @@ impl Serialize for Duration {
         S: Serializer,
     {
         use super::SerializeStruct;
-        let mut state = try!(serializer.serialize_struct("Duration", 2));
-        try!(state.serialize_field("secs", &self.as_secs()));
-        try!(state.serialize_field("nanos", &self.subsec_nanos()));
+        let mut state = serializer.serialize_struct("Duration", 2)?;
+        state.serialize_field("secs", &self.as_secs())?;
+        state.serialize_field("nanos", &self.subsec_nanos())?;
         state.end()
     }
 }
