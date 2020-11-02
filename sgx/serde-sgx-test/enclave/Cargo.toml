@@ -11,10 +11,10 @@ crate-type = ["staticlib"]
 default = []
 
 [dependencies]
-#serde = { git = "https://github.com/mesalock-linux/serde-sgx.git", features = ["rc", "unstable"] }
-#serde_derive = { git = "https://github.com/mesalock-linux/serde-sgx.git" }
-#serde_test = { git = "https://github.com/mesalock-linux/serde-sgx.git" }
-fnv = { git = "https://github.com/mesalock-linux/rust-fnv-sgx.git" }
+#serde = { git = "https://github.com/mesalock-linux/serde-sgx", features = ["rc", "unstable"] }
+#serde_derive = { git = "https://github.com/mesalock-linux/serde-sgx" }
+#serde_test = { git = "https://github.com/mesalock-linux/serde-sgx" }
+fnv = { git = "https://github.com/mesalock-linux/rust-fnv-sgx" }
 serde = { path = "../../../serde", features = ["rc", "unstable"] }
 serde_derive = { path = "../../../serde_derive" }
 serde_test = { path = "../../../serde_test" }
