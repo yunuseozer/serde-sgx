@@ -16,7 +16,7 @@ build = "build.rs"
 
 [dependencies]
 serde_derive = { version = "=1.0.118", optional = true, path = "../serde_derive" }
-sgx_tstd = { rev = "v1.1.4", git = "https://github.com/yunuseozer/incubator-teaclave-sgx-sdk.git", optional = true }
+sgx_tstd = { rev = "v1.1.4-upgrade", git = "https://github.com/yunuseozer/incubator-teaclave-sgx-sdk.git", optional = true }
 
 [dev-dependencies]
 serde_derive = { version = "1.0", path = "../serde_derive" }
